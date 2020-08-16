@@ -13,6 +13,7 @@ import (
 func Scrape(url string) []byte {
 	collyIns := colly.NewCollector()
 	var wordsCountMap map[string]int
+	var collyError error
 
 	collyIns.OnHTML("html", func(e *colly.HTMLElement) {
 		e.DOM.Find("script,style").Each(func(index int, item *goquery.Selection) {
@@ -21,7 +22,14 @@ func Scrape(url string) []byte {
 		wordsCountMap = wordCounter(e.DOM.Contents().Text())
 	})
 
+	collyIns.OnError(func(r *colly.Response, err error) {
+		collyError = err
+	})
+
 	collyIns.Visit(url)
+	if collyError != nil {
+		panic(collyError)
+	}
 	byteArr, err := json.Marshal(wordsCountMap)
 	if err != nil {
 		panic(err)
